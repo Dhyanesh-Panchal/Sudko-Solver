@@ -1,98 +1,182 @@
 class SudokuSolver {
+  validate(puzzleString) { }
 
-  board = []
-
-  validate(puzzleString) {
-  }
-
-  checkRowPlacement(board, row, col, value) {
-    for (let i = 0; i < 9; i++) {
-      if (board[ row ][ i ] == value)
-        return false;
+  letterToNumber(row) {
+    switch (row.toUpperCase()) {
+      case "A":
+        return 1;
+      case "B":
+        return 2;
+      case "C":
+        return 3;
+      case "D":
+        return 4;
+      case "E":
+        return 5;
+      case "F":
+        return 6;
+      case "G":
+        return 7;
+      case "H":
+        return 8;
+      case "I":
+        return 9;
+      default:
+        return "none";
     }
-    return true;
   }
 
-  checkColPlacement(board, row, col, value) {
-    for (let i = 0; i < 9; i++) {
-      if (board[ i ][ col ] == value)
-        return false;
-    }
-    return true;
-  }
+  checkRowPlacement(puzzleString, row, column, value) {
 
-  checkRegionPlacement(board, row, col, value) {
-    let r = Math.floor(row / 3) * 3;
-    let c = Math.floor(col / 3) * 3;
-    for (let i = r; i < r + 3; i++) {
-      for (let j = c; j < c + 3; j++) {
-        if (board[ i ][ j ] == value)
-          return false;
-      }
-    }
-    return true;
-  }
-
-  isSafe(board, row, col, value) {
-    if (this.checkRowPlacement(board, row, col, value) && this.checkColPlacement(board, row, col, value) && this.checkRegionPlacement(board, row, col, value))
+    let grid = this.transform(puzzleString);
+    row = this.letterToNumber(row);
+    if (grid[ row - 1 ][ column - 1 ] == value)
       return true;
-    else
+    if (grid[ row - 1 ][ column - 1 ] !== 0) {
       return false;
+    }
+    for (let i = 0; i < 9; i++) {
+      if (grid[ row - 1 ][ i ] == value) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  recSolv(board, row, col) {
+  checkColPlacement(puzzleString, row, column, value) {
 
-    if (row == board.length) {
+    let grid = this.transform(puzzleString);
+    row = this.letterToNumber(row);
+    if (grid[ row - 1 ][ column - 1 ] == value)
       return true;
+    if (grid[ row - 1 ][ column - 1 ] !== 0) {
+      return false;
     }
-    let newrow, newcol;
-    if (col != board.length - 1) {
-      newrow = row;
-      newcol = col + 1;
-    } else {
-      newrow = row + 1;
-      newcol = 0;
+    for (let i = 0; i < 9; i++) {
+      if (grid[ i ][ column - 1 ] == value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  checkRegionPlacement(puzzleString, row, col, value) {
+    let grid = this.transform(puzzleString);
+    row = this.letterToNumber(row);
+    if (grid[ row - 1 ][ col - 1 ] == value)
+      return true;
+    // console.log('the row is: ', row)
+    row = row - 1;
+    col = col - 1;
+    if (grid[ row ][ col ] !== 0) {
+      return false;
+    }
+    let startRow = row - (row % 3),
+      startCol = col - (col % 3);
+    console.log(startCol, startRow)
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        try { if (grid[ i + startRow ][ j + startCol ] == value) return false; } catch (err) { console.log(err) }
+    return true;
+  }
+
+  solveSuduko(grid, row, col) {
+    const N = 9;
+
+    if (row == N - 1 && col == N) return grid;
+
+    if (col == N) {
+      row++;
+      col = 0;
     }
 
-    if (board[ row ][ col ] != '.') {
-      if (this.recSolv(this.board, newrow, newcol)) {
-        return true;
+    if (grid[ row ][ col ] != 0) return this.solveSuduko(grid, row, col + 1);
+
+    for (let num = 1; num < 10; num++) {
+      if (this.isSafe(grid, row, col, num)) {
+        grid[ row ][ col ] = num;
+
+        if (this.solveSuduko(grid, row, col + 1)) return grid;
       }
-    }
-    else {
-      for (let i = 1; i <= 9; i++) {
-        //Number is Safe to fit
-        if (this.isSafe(board, row, col, i)) {
-          this.board[ row ][ col ] = `${i}`;
-          if (this.recSolv(this.board, newrow, newcol)) {
-            return true;
-          }
-          else {
-            this.board[ row ][ col ] = `.`;
-          }
-        }
-      }
+
+      grid[ row ][ col ] = 0;
     }
     return false;
   }
 
-  solve(puzzle) {
-    // let board = [];
-    //CONVERTING STRING INTO GRID 
-    for (let i = 0; i < 81; i += 9) {
-      this.board.push((puzzle.slice(i, i + 9)).split(''))
-      console.log(this.board)
-    }
+  isSafe(grid, row, col, num) {
+    // Check if we find the same num
+    // in the similar row , we
+    // return false
+    for (let x = 0; x <= 8; x++) if (grid[ row ][ x ] == num) return false;
 
-    if (this.recSolv(this.board, 0, 0)) {
-      console.log(this.board)
-    }
+    // Check if we find the same num
+    // in the similar column ,
+    // we return false
+    for (let x = 0; x <= 8; x++) if (grid[ x ][ col ] == num) return false;
 
+    // Check if we find the same num
+    // in the particular 3*3
+    // matrix, we return false
+    let startRow = row - (row % 3),
+      startCol = col - (col % 3);
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        if (grid[ i + startRow ][ j + startCol ] == num) return false;
+
+    return true;
+  }
+
+  transform(puzzleString) {
+    // take ..53..23.23. => [[0,0,5,3,0,0,2,3,0],
+    // [2,3,0]
+    let grid = [
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+      [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+    ];
+    let row = -1;
+    let col = 0;
+    for (let i = 0; i < puzzleString.length; i++) {
+      if (i % 9 == 0) {
+        row++;
+      }
+      if (col % 9 == 0) {
+        col = 0;
+      }
+
+      grid[ row ][ col ] = puzzleString[ i ] === "." ? 0 : +puzzleString[ i ];
+      col++;
+    }
+    return grid;
+  }
+
+  transformBack(grid) {
+    return grid.flat().join("");
+  }
+
+  solve(puzzleString) {
+    if (puzzleString.length != 81) {
+      return false;
+    }
+    if (/[^0-9.]/g.test(puzzleString)) {
+      return false;
+    }
+    let grid = this.transform(puzzleString);
+    let solved = this.solveSuduko(grid, 0, 0);
+    if (!solved) {
+      return false;
+    }
+    let solvedString = this.transformBack(solved);
+    // console.log("solvedString :>> ", solvedString);
+    return solvedString;
   }
 }
 
-let solver = new SudokuSolver;
-solver.solve('1.5..2.84..63.12.7.2..5.....9..1....8.2.3674.3.7.2..9.47...8..1..16....926914.37.');
-
 module.exports = SudokuSolver;
-
